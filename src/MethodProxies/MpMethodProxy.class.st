@@ -84,18 +84,18 @@ MpMethodProxy class >> buildPrototypesUpToArguments: maxNumberOfArguments [
 		trapSelector := #trapMethod.
 		1 to: numberOfArguments do: [ :i | trapSelector := trapSelector , #with: ].
 		trapArguments := (1 to: numberOfArguments) collect: [ :i |
-			                 ASTVariableNode named: 'arg' , i asString ].
+			                 RBVariableNode named: 'arg' , i asString ].
 
 		originalAst selector: trapSelector.
 		originalAst arguments: trapArguments.
 		
 		argumentListNodes := originalAst allChildren select: [ :e | e value = #argumentList ].
-		argumentListNodes do: [ :e | e replaceWith: (ASTArrayNode statements: trapArguments) ].
+		argumentListNodes do: [ :e | e replaceWith: (RBArrayNode statements: trapArguments) ].
 
 		forwarders := originalAst sendNodes select: [ :e | e selector = #originalMessage ].
 		forwarders do: [ :e |
-			e replaceWith: (ASTMessageNode
-					 receiver: ASTVariableNode selfNode
+			e replaceWith: (RBMessageNode
+					 receiver: RBVariableNode selfNode
 					 selector: trapSelector
 					 arguments: trapArguments) ].
 		self class compile: originalAst formattedCode ]
@@ -1442,7 +1442,9 @@ MpMethodProxy >> install [
 			During the meta-jump call the handler to tell there was an unwind."
 			thisProcess shiftLevelUp.
 			trapContext := thisContext findNextUnwindContextUpTo: nil.
-			wasMeta := trapContext tempNamed: 'wasMeta'.
+			[ wasMeta := trapContext tempNamed: 'wasMeta' ]
+				on: Exception
+				do: [ wasMeta := true ].
 			handler
 				aboutToReturnWithReceiver: trapContext receiver
 				arguments: trapContext arguments.
